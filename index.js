@@ -47,7 +47,13 @@ const start = async () => {
 
             }
             if (text === '/info') {
-                const user = await UserModel.findOne({chatId})
+                try {
+                    user = await UserModel.findOne({ where: { chatId: String(chatId) } })
+                    await bot.sendMessage(chatId, `Айди пользователя ${chatId}`)
+                } catch (err) {
+                    console.error(err);
+                    return bot.sendMessage(chatId, 'Произошла ошибка при поиске пользователя');
+                }
                 return bot.sendMessage(chatId, `Тебя зовут ${msg.from.first_name} ${msg.from.last_name}. В игре у тебя ${user.right} правильных ответов, ${user.wrong} неправильных ответов.`)
             }
 
