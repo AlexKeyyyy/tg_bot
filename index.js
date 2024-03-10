@@ -65,23 +65,35 @@ const start = async () => {
 
     })
 
-    bot.on('callback_query', async msg => {
-        const data = msg.data;
-        const chatId = msg.message.chat.id;
+    bot.on('callback_query', async function onCallbackQuery(callbackQuery) {
+        const data = callbackQuery.data;
+        const chatId = callbackQuery.message.chat.id;
         if (data ==='/again')
         {
             return startGame(chatId);
         }
-        const user = await UserModel.findOne({chatId})
+        let user;
+        try {
+            user = await UserModel.findOne({ where: { chatId: String(chatId) } })
+            await bot.sendMessage(chatId, `Айди пользователя ${chatId}`)
+        } catch (err) {
+            console.error(err);
+            return bot.sendMessage(chatId, 'Произошла ошибка при поиске пользователя');
+        }
         if (data == chats[chatId]){
-            user.right+=1;
-            await bot.sendMessage(chatId, `Поздравляю, ты угадал цифру ${chats[chatId]}`, againOptions)
+            await user.increment('right');
+            bot.sendMessage(chatId, `Поздравляю, ты угадал цифру ${chats[chatId]}`, againOptions)
         }
         else {
-            user.wrong+=1;
-            await bot.sendMessage(chatId, `Сорян, ты промазал, я загадал цифру ${chats[chatId]}`, againOptions)
+            await user.increment('wrong');
+            bot.sendMessage(chatId, `Сорян, ты промазал, я загадал цифру ${chats[chatId]}`, againOptions)
         }
-        await user.save();
+        try {
+            await user.save();
+        } catch (err) {
+            console.error(err);
+            return bot.sendMessage(chatId, 'Произошла ошибка при сохранении пользователя');
+        }
     })
 
 }
